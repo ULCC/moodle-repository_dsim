@@ -17,15 +17,15 @@
 /**
  * Version information
  *
- * @package    repository_demo
+ * @package    repository_dsim
  * @category   repository
- * @copyright  2012 Dongsheng Cai
- * @author     Dongsheng Cai {@link http://dongsheng.org}
+ * @copyright  2012 ULCC http://www.ulcc.ac.uk
+ * @author     James Ballard
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2012012501;        // The current plugin version (Date: YYYYMMDDXX)
-$plugin->requires  = 2012012501;        // Requires this Moodle version
-$plugin->component = 'repository_demo'; // Full name of the plugin (used for diagnostics)
+$plugin->version   = 2012081701;        // The current plugin version (Date: YYYYMMDDXX)
+$plugin->requires  = 2011112900;        // Requires this Moodle version
+$plugin->component = 'repository_dsim'; // Full name of the plugin (used for diagnostics)

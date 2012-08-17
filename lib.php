@@ -15,15 +15,16 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * repository_demo class
+ * repository_dsim class
  * This is a subclass of repository class
  *
- * @package    repository_demo
+ * @package    repository_dsim
  * @category   repository
- * @copyright  2012 Dongsheng Cai {@link http://dongsheng.org}
+ * @copyright  2012 ULCC http://www.ulcc.ac.uk
+ * @author     James Ballard
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class repository_demo extends repository {
+class repository_dsim extends repository {
 
     /**
      * Constructor
@@ -161,7 +162,7 @@ class repository_demo extends repository {
      * Instance config form
      */
     public function instance_config_form(&$mform) {
-        $mform->addElement('text', 'account', get_string('account', 'repository_demo'), array('value'=>'','size' => '40'));
+        $mform->addElement('text', 'account', get_string('account', 'repository_dsim'), array('value'=>'','size' => '40'));
     }
 
     /**
@@ -177,7 +178,8 @@ class repository_demo extends repository {
      * Type config form
      */
     public function type_config_form(&$mform) {
-        $mform->addElement('text', 'api_key', get_string('api_key', 'repository_demo'), array('value'=>'','size' => '40'));
+        $mform->addElement('text', 'accessurl', get_string('accessurl', 'repository_dsim'), array('value'=>'','size' => '80'));
+        $mform->addElement('text', 'api_key', get_string('api_key', 'repository_dsim'), array('value'=>'','size' => '80'));
     }
     /**
      * will be called when installing a new plugin in admin panel

@@ -17,10 +17,11 @@
 /**
  * This file contains demo repository plugin language strings
  */
-$string['pluginname_help'] = 'Demo repository';
-$string['pluginname'] = 'Demo';
-$string['demo:view'] = 'View demo repository';
-$string['configplugin'] = 'Demo repository configuration';
+$string['pluginname_help'] = 'DecisionSim repository';
+$string['pluginname'] = 'DecisionSim';
+$string['demo:view'] = 'View DecisionSim repository';
+$string['configplugin'] = 'DecisionSim repository configuration';
 $string['account'] = 'Account information';
 $string['configplugin'] = 'Configuration for this plugin';
 $string['api_key'] = 'API Key';
+$string['accessurl'] = 'Access URL: these URLS will change depending on where the application is hosted.';
