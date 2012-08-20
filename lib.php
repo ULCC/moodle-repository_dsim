@@ -35,6 +35,11 @@ class repository_dsim extends repository {
      */
     public function __construct($repositoryid, $context = SITEID, $options = array()) {
         parent::__construct($repositoryid, $context, $options);
+        $this->accessurl = $this->get_option('accessurl');
+        $this->instusername = $this->get_option('instusername');
+        $this->instpassword = $this->get_option('instpassword');
+        $this->publiccases = $this->get_option('publiccases');
+        $this->instonly = $this->get_option('instonly');
     }
 
     /**
@@ -44,40 +49,98 @@ class repository_dsim extends repository {
      * @param string $page
      */
     public function get_listing($path = '', $page = '') {
-        $list = array();
-        $list['list'] = array();
+        global $CFG,$OUTPUT;
+        $client = new SoapClient($this->accessurl, array("trace" => 1, "exceptions" => 0));
+
+        $xmlCaseList = simplexml_load_string($this->getCaseList($client));
+
+        $ret = array();
+
+        $ret['list'] = array();
         // the management interface url
-        $list['manage'] = false;
+        $ret['manage'] = false;
         // dynamically loading
-        $list['dynload'] = true;
+        $ret['dynload'] = true;
         // the current path of this list.
-        $list['path'] = array(
-            array('name'=>'root', 'path'=>''),
-            array('name'=>'sub_dir', 'path'=>'/sub_dir')
-            );
+        $ret['path'] = array();
         // set to true, the login link will be removed
-        $list['nologin'] = false;
+        $ret['nologin'] = true;
         // set to true, the search button will be removed
-        $list['nosearch'] = false;
+        $ret['nosearch'] = true;
         // a file in listing
-        $list['list'][] = array('title'=>'file.txt',
-            'size'=>'1kb',
-            'date'=>'2008.1.12',
-            'thumbnail'=>'http://localhost/xx.png',
-            'thumbnail_wodth'=>32,
-            // plugin-dependent unique path to the file (id, url, path, etc.)
-            'source'=>'',
-            // the accessible url of the file
-            'url'=>''
+        foreach($xmlCaseList->children() as $child)
+        {
+            $title = (string)$child->caseTitle;
+            $source = (string)$child->caseID;
+            $url = (string)$this->generatePlayerLink($client,$source);
+            $ret['list'][] = array(
+                'title'=>$title,
+                'source'=>$url,
+                'thumbnail' => $OUTPUT->pix_url('f/folder-32')->out(false),
+                'date'=>'',
+                'size'=>'unknown',
+                // the accessible url of the file
+                'url'=>$url
+            );
+        }
+        return $ret;
+    }
+
+    /**
+     * Get file listing
+     *
+     * @param string $path
+     * @param string $page
+     */
+
+    public function getCaseList($client){
+        $myCaseList = array(
+            'institutionalUserName'=>$this->instusername,
+            'institutionalPassword'=>$this->instpassword,
+            'showPublicCases'=>$this->publiccases,
+            'showMyInstitutionOnly'=>$this->instonly
         );
-        // a folder in listing
-        $list['list'][] = array('title'=>'foler',
-            'size'=>'0',
-            'date'=>'2008.1.12',
-            'childre'=>array(),
-            'thumbnail'=>'http://localhost/xx.png',
+        $response = $client->getSimpleCaseList($myCaseList);
+        $xml = $response->getSimpleCaseListResult;
+        return $xml;
+
+    }
+
+    /**
+     * generatePlayerLink method takes the following arguments:
+     *  1: Institutional login name (user name)
+     *  2: Institutional password
+     *  3: Student's/Learner's user id (institution's unique identifier for that user)
+     *  4: Student's First Name
+     *  5: Student's Last Name
+     *  6: Student's Email Address
+     *  7: Case ID (vpSim ID for the case that student/learner needs to access)
+     *  generatePlayerLink returns generates a one-time passcode for the student/learner
+     *  and returns a URL to the vpSim player
+     *
+     * @param object $client
+     * @param string $caseID
+     *
+     */
+
+    public function generatePlayerLink($client, $caseID){
+        global $USER;
+        //Define an associative array of arguments for a specific webservice method
+
+        $myPlayer = array(
+            'institutionalUserName'=>$this->instusername,
+            'institutionalPassword'=>$this->instpassword,
+            'userID'=>$USER->username,
+            'userFirstName'=>$USER->firstname,
+            'userLastName'=>$USER->lastname,
+            'userEmail'=>$USER->email,
+            'caseID'=>$caseID
         );
-        return $list;
+
+        // Call webservice method
+        $response = $client->generatePlayerLink($myPlayer);
+        $url = $response->generatePlayerLinkResult;
+        return $url;
     }
 
     /**
@@ -150,19 +213,62 @@ class repository_dsim extends repository {
     }
 
     /**
-     * this function must be static
      *
-     * @return array
+     * @param array $options
+     * @return mixed
      */
-    public static function get_instance_option_names() {
-        return array('account');
+    public function set_option($options = array()) {
+        if (!empty($options['accessurl'])) {
+            set_config('accessurl', trim($options['accessurl']), 'dsim');
+        }
+        if (!empty($options['instusername'])) {
+            set_config('instusername', trim($options['instusername']), 'dsim');
+        }
+        if (!empty($options['instpassword'])) {
+            set_config('instpassword', trim($options['instpassword']), 'dsim');
+        }
+        if (!empty($options['publiccases'])) {
+            set_config('publiccases', trim($options['publiccases']), 'dsim');
+        }
+        if (!empty($options['instonly'])) {
+            set_config('instonly', trim($options['instonly']), 'dsim');
+        }
+        unset($options['accessurl']);
+        unset($options['instusername']);
+        unset($options['instpassword']);
+        unset($options['publiccases']);
+        unset($options['instonly']);
+
+        $ret = parent::set_option($options);
+        return $ret;
     }
 
     /**
-     * Instance config form
+     *
+     * @param string $config
+     * @return mixed
      */
-    public function instance_config_form(&$mform) {
-        $mform->addElement('text', 'account', get_string('account', 'repository_dsim'), array('value'=>'','size' => '40'));
+    public function get_option($config = '') {
+
+        if ($config==='accessurl') {
+            return trim(get_config('dsim', 'accessurl'));
+        }elseif ($config==='instusername') {
+            return trim(get_config('dsim', 'instusername'));
+        }elseif ($config==='instpassword') {
+            return trim(get_config('dsim', 'instpassword'));
+        }elseif ($config==='publiccases') {
+            return trim(get_config('dsim', 'publiccases'));
+        }elseif ($config==='instonly') {
+            return trim(get_config('dsim', 'instonly'));
+        } else {
+            $options['accessurl'] = trim(get_config('dsim', 'accessurl'));
+            $options['instusername'] = trim(get_config('dsim', 'instusername'));
+            $options['instpassword']  = trim(get_config('dsim', 'instpassword'));
+            $options['publiccases']  = trim(get_config('dsim', 'publiccases'));
+            $options['instonly']  = trim(get_config('dsim', 'instonly'));
+        }
+        $options = parent::get_option($config);
+        return $options;
     }
 
     /**
@@ -171,25 +277,54 @@ class repository_dsim extends repository {
      * @return array
      */
     public static function get_type_option_names() {
-        return array('api_key');
+        return array('accessurl','instusername','instpassword','publiccases','instonly');
     }
 
     /**
      * Type config form
      */
     public function type_config_form(&$mform) {
-        $mform->addElement('text', 'accessurl', get_string('accessurl', 'repository_dsim'), array('value'=>'','size' => '80'));
-        $mform->addElement('text', 'api_key', get_string('api_key', 'repository_dsim'), array('value'=>'','size' => '80'));
-    }
-    /**
-     * will be called when installing a new plugin in admin panel
-     *
-     * @return bool
-     */
-    public static function plugin_init() {
-        $result = true;
-        // do nothing
-        return $result;
+        global $CFG;
+        $accessurl = get_config('dsim', 'accessurl');
+        $instusername = get_config('dsim', 'instusername');
+        $instpassword = get_config('dsim', 'instpassword');
+        $publiccases = get_config('dsim', 'publiccases');
+        $instonly = get_config('dsim', 'instonly');
+
+        if (empty($accessurl)) {
+            $accessurl = '';
+        }
+        if (empty($instusername)) {
+            $instusername = '';
+        }
+        if (empty($instpassword)) {
+            $instpassword = '';
+        }
+        if (empty($publiccases)) {
+            $publiccases = '';
+        }
+        if (empty($instonly)) {
+            $instonly = '';
+        }
+
+        parent::type_config_form($mform);
+
+        $strrequired = get_string('required');
+
+        $mform->addElement('text', 'accessurl', get_string('accessurl', 'repository_dsim'), array('value'=>$accessurl,'size' => '80'));
+        $mform->addRule('accessurl', $strrequired, 'required', null, 'client');
+
+        $mform->addElement('text', 'instusername', get_string('instusername', 'repository_dsim'), array('value'=>'','size' => '80'));
+        $mform->addRule('instusername', $strrequired, 'required', null, 'client');
+
+        $mform->addElement('password', 'instpassword', get_string('instpassword', 'repository_dsim'), array('value'=>$instpassword, 'size' => '80'));
+        $mform->addRule('instpassword', $strrequired, 'required', null, 'client');
+
+        $mform->addElement('selectyesno', 'publiccases', get_string('publiccases', 'repository_dsim'), array('value'=> $publiccases));
+        $mform->addRule('publiccases', $strrequired, 'required', null, 'client');
+
+        $mform->addElement('selectyesno', 'instonly', get_string('instonly', 'repository_dsim'), array('value'=> $instonly));
+        $mform->addRule('instonly', $strrequired, 'required', null, 'client');
     }
 
     /**
@@ -201,6 +336,6 @@ class repository_dsim extends repository {
         // From moodle 2.3, we support file reference
         // see moodle docs for more information
         //return FILE_INTERNAL | FILE_EXTERNAL | FILE_REFERENCE;
-        return FILE_INTERNAL | FILE_EXTERNAL;
+        return FILE_EXTERNAL;
     }
 }
