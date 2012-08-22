@@ -27,5 +27,5 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->version   = 2012081701;        // The current plugin version (Date: YYYYMMDDXX)
-$plugin->requires  = 2011112900;        // Requires this Moodle version
+$plugin->requires  = 2011033003;        // Requires this Moodle version
 $plugin->component = 'repository_dsim'; // Full name of the plugin (used for diagnostics)
